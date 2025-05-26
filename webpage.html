@@ -3,46 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Use forward slashes for paths (works on all platforms) -->
     <link rel="stylesheet" href="./mathquill/mathquill.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src="./mathquill/mathquill.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
     <script>
         var MQ = MathQuill.getInterface(2);
     </script>
-    <title>Quadratic Equation Solver</title>
+    <title>Limit Solver</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .input-box {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .math-field-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            min-height: 50px;
+            background-color: #fafafa;
+        }
+        
+        .mq-editable-field {
+            font-size: 1.5em;
+            min-width: 200px;
+            padding: 5px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .result-box {
+            background-color: #e8f4fc;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 60px;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .mq-math-mode {
+            font-size: 1.4em;
+        }
+    </style>
 </head>
 <body>
-    <p>Solve <span id="problem">ax^2 + bx + c = 0</span>.</p>
-    <p>Solution: <span id="answer">x=</span></p>
+    <h1>Limit Solver</h1>
+    
+    <div class="container">
+        <div class="input-box">
+            <div class="input-group">
+                <label for="function-input">Function f(x):</label>
+                <div class="math-field-container">
+                    <span id="function-input"></span>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="approach-input">Approaches:</label>
+                <div class="math-field-container">
+                    <span id="approach-input"></span>
+                </div>
+            </div>
+            
+            <button id="calculate">Calculate Limit</button>
+        </div>
+        
+        <div class="result-box">
+            <div class="result-title">Result:</div>
+            <div id="result"></div>
+        </div>
+    </div>
 
     <script>
-        // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize static math for the problem
-            var problemSpan = document.getElementById('problem');
-            MQ.StaticMath(problemSpan);
-            
-            // Initialize editable math field for the answer
-            var answerSpan = document.getElementById('answer');
-            var answerMathField = MQ.MathField(answerSpan, {
+            // Initialize MathQuill fields
+            const functionInput = MQ.MathField(document.getElementById('function-input'), {
+                spaceBehavesLikeTab: true,
                 handlers: {
                     edit: function() {
-                        var enteredMath = answerMathField.latex(); // Get entered math in LaTeX format
-                        checkAnswer(enteredMath); // You'll need to define this function
+                        // Update function display
                     }
                 }
             });
             
-            // Example checkAnswer function (you should customize this)
-            function checkAnswer(latex) {
-                console.log("User entered:", latex);
-                // Add your answer checking logic here
-                // For example:
-                // if (latex === "\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}") {
-                //     alert("Correct!");
-                // }
-            }
+            const approachInput = MQ.MathField(document.getElementById('approach-input'), {
+                spaceBehavesLikeTab: true,
+                handlers: {
+                    edit: function() {
+                        // Update approach value display
+                    }
+                }
+            });
+            
+            const resultField = MQ.StaticMath(document.getElementById('result'));
+            
+            // Set default values
+            functionInput.latex('x^2');
+            approachInput.latex('2');
+            
+            // Calculate button click handler
+            document.getElementById('calculate').addEventListener('click', function() {
+                try {
+                    const fn = functionInput.latex();
+                    const approach = approachInput.latex();
+                    
+                    // Simple limit calculation (direct substitution)
+                    // Note: math.js doesn't do symbolic limits, this is just substitution
+                    const expr = fn.replace(/\\?x/g, approach);
+                    const parsed = math.parse(expr);
+                    const value = parsed.evaluate();
+                    
+                    resultField.latex(`\\lim_{x \\to ${approach}} \\${fn} = ${value}`);
+                } catch (error) {
+                    resultField.latex('\\text{Error: Could not compute limit}');
+                    console.error(error);
+                }
+            });
         });
     </script>
 </body>
