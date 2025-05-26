@@ -49,15 +49,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function latexToMath(latex) {
-        // Simple conversion - this needs to be more robust for production
-        return latex
-            .replace(/\\frac{(.*?)}{(.*?)}/g, '($1)/($2)')
-            .replace(/\\sqrt{(.*?)}/g, 'sqrt($1)')
-            .replace(/\\left|\\right/g, '')
-            .replace(/\s/g, '')
-            .replace(/\^\{([^}]+)\}/g, '^($1)')
-            .replace(/e\^\{([^}]+)\}/g, 'exp($1)');
-    }
+    return latex
+        .replace(/\\frac{(.*?)}{(.*?)}/g, '($1)/($2)')
+        .replace(/\\sqrt{(.*?)}/g, 'sqrt($1)')
+        .replace(/\\left|\\right/g, '')
+        .replace(/\\sin/g, 'sin')
+        .replace(/\\cos/g, 'cos')
+        .replace(/\\tan/g, 'tan')
+        .replace(/\\ln/g, 'log')       // math.js uses log for natural logarithm
+        .replace(/\\log/g, 'log10')    // optional: handle base-10 log
+        .replace(/\\exp/g, 'exp')
+        .replace(/\\pi/g, 'pi')
+        .replace(/\^\{([^}]+)\}/g, '^($1)')
+        .replace(/\s/g, '');
+}
 
     function calculateLimit(expr, x) {
         // Try direct substitution first
