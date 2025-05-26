@@ -28,15 +28,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Convert LaTeX to math expression
             const mathExpr = latexToMath(latexFn);
-            const approachValue = parseFloat(latexApproach);
+            const approachValue = parseLatexNumber(latexApproach);
             
             // Calculate limit
-            const limitValue = calculateLimit(mathExpr, approachValue);
+            const { value, steps } = calculateLimit(mathExpr, approachValue);
             
             // Display results
-            if (limitValue !== undefined) {
-                resultField.latex(`\\lim_{x \\to ${approachValue}} ${latexFn} = ${formatResult(limitValue)}`);
-                stepsField.innerHTML = `<p>Limit exists and equals ${limitValue}</p>`;
+            if (value !== undefined) {
+                resultField.latex(`\\lim_{x \\to ${approachValue}} ${latexFn} = ${formatResult(value)}`);
+                stepsField.innerHTML = steps;
             } else {
                 resultField.latex(`\\lim_{x \\to ${approachValue}} ${latexFn} \\text{ does not exist}`);
                 stepsField.innerHTML = `<p>Limit does not exist or could not be determined</p>`;
@@ -48,37 +48,79 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    function parseLatexNumber(latex) {
+        // Handle simple numbers and fractions
+        if (/^-?\d+$/.test(latex)) return parseFloat(latex);
+        
+        // Handle fractions like \frac{num}{denom}
+        const fracMatch = latex.match(/^\\frac\{(-?\d+)\}\{(-?\d+)\}$/);
+        if (fracMatch) {
+            return parseFloat(fracMatch[1]) / parseFloat(fracMatch[2]);
+        }
+        
+        // Handle pi expressions like \pi or -\pi
+        if (latex === '\\pi') return Math.PI;
+        if (latex === '-\\pi') return -Math.PI;
+        
+        // Default case
+        return parseFloat(latex) || 0;
+    }
+
     function latexToMath(latex) {
-    return latex
-        .replace(/\\frac{(.*?)}{(.*?)}/g, '($1)/($2)')
-        .replace(/\\sqrt{(.*?)}/g, 'sqrt($1)')
-        .replace(/\\left|\\right/g, '')
-        .replace(/\\sin/g, 'sin')
-        .replace(/\\cos/g, 'cos')
-        .replace(/\\tan/g, 'tan')
-        .replace(/\\ln/g, 'log')       // math.js uses log for natural logarithm
-        .replace(/\\log/g, 'log10')    // optional: handle base-10 log
-        .replace(/\\exp/g, 'exp')
-        .replace(/\\pi/g, 'pi')
-        .replace(/\^\{([^}]+)\}/g, '^($1)')
-        .replace(/\s/g, '');
-}
+        return latex
+            .replace(/\\frac{(.*?)}{(.*?)}/g, '($1)/($2)')
+            .replace(/\\sqrt{(.*?)}/g, 'sqrt($1)')
+            .replace(/\\left|\\right/g, '')
+            .replace(/\\sin/g, 'sin')
+            .replace(/\\cos/g, 'cos')
+            .replace(/\\tan/g, 'tan')
+            .replace(/\\ln/g, 'log')
+            .replace(/\\log/g, 'log10')
+            .replace(/\\exp/g, 'exp')
+            .replace(/\\pi/g, 'pi')
+            .replace(/\^\{([^}]+)\}/g, '^($1)')
+            .replace(/\s/g, '');
+    }
 
     function calculateLimit(expr, x) {
-        // Try direct substitution first
-        const directValue = tryDirectSubstitution(expr, x);
-        if (directValue !== undefined) return directValue;
+        let steps = [];
         
-        // Try algebraic simplification
-        const simplifiedValue = tryAlgebraicSimplification(expr, x);
-        if (simplifiedValue !== undefined) return simplifiedValue;
+        // Step 1: Try direct substitution
+        const direct = tryDirectSubstitution(expr, x);
+        steps.push(`<p><b>Step 1: Direct Substitution</b><br>Trying to substitute x = ${x}: ${expr.replace(/x/g, `(${x})`)}</p>`);
         
-        // Try L'Hôpital's rule for indeterminate forms
-        const lhopitalValue = tryLHopital(expr, x);
-        if (lhopitalValue !== undefined) return lhopitalValue;
+        if (direct !== undefined && !isNaN(direct)) {
+            steps.push(`<p>Direct substitution works: Result = ${direct}</p>`);
+            return { value: direct, steps: steps.join('') };
+        }
         
-        // Couldn't determine limit
-        return undefined;
+        // Step 2: Try algebraic simplification
+        const simplified = tryAlgebraicSimplification(expr, x);
+        steps.push(`<p><b>Step 2: Algebraic Simplification</b><br>Trying to simplify the expression</p>`);
+        
+        if (simplified !== undefined) {
+            const simplifiedValue = tryDirectSubstitution(simplified, x);
+            if (simplifiedValue !== undefined) {
+                steps.push(`<p>Simplified to: ${simplified}<br>Now substituting x = ${x}: ${simplifiedValue}</p>`);
+                return { value: simplifiedValue, steps: steps.join('') };
+            }
+        }
+        
+        // Step 3: Try L'Hôpital's Rule
+        steps.push(`<p><b>Step 3: L'Hôpital's Rule</b><br>Checking for indeterminate form (0/0 or ∞/∞)</p>`);
+        const lh = tryLHopital(expr, x, steps);
+        if (lh !== undefined) {
+            return { value: lh, steps: steps.join('') };
+        }
+        
+        // Step 4: Try numerical approach
+        steps.push(`<p><b>Step 4: Numerical Approach</b><br>Evaluating function near x = ${x}</p>`);
+        const numerical = tryNumericalApproach(expr, x, steps);
+        if (numerical !== undefined) {
+            return { value: numerical, steps: steps.join('') };
+        }
+        
+        return { value: undefined, steps: steps.join('') };
     }
 
     function tryDirectSubstitution(expr, x) {
@@ -87,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const parsed = math.parse(substituted);
             const value = parsed.evaluate();
             
-            if (isNaN(value)) return undefined;
+            if (isNaN(value) || !isFinite(value)) return undefined;
             return value;
         } catch (e) {
             return undefined;
@@ -97,37 +139,109 @@ document.addEventListener('DOMContentLoaded', function() {
     function tryAlgebraicSimplification(expr, x) {
         try {
             // Example: (x^2-4)/(x-2) simplifies to x+2
-            if (expr === '(x^2-4)/(x-2)') {
-                return x + 2;
+            if (expr.match(/\(x\^2\s*-\s*\d+\)\s*\/\s*\(x\s*-\s*\d+\)/)) {
+                const numerator = expr.match(/\(x\^2\s*-\s*(\d+)\)/)[1];
+                const denominator = expr.match(/\(x\s*-\s*(\d+)\)/)[1];
+                const a = Math.sqrt(parseInt(numerator));
+                if (a.toString() === denominator) {
+                    return `x + ${a}`;
+                }
             }
-            // Add more simplification rules as needed
+            
+            // Example: (x^2-9)/(x-3) simplifies to x+3
+            if (expr.match(/\(x\^2\s*-\s*9\)\s*\/\s*\(x\s*-\s*3\)/)) {
+                return 'x + 3';
+            }
+            
+            // Add more simplification patterns as needed
             return undefined;
         } catch (e) {
             return undefined;
         }
     }
 
-    function tryLHopital(expr, x) {
+    function tryLHopital(expr, x, steps) {
         try {
-            // Very basic implementation for 0/0 cases
-            if (expr.includes('/')) {
-                const [num, den] = expr.split('/');
-                const numVal = tryDirectSubstitution(num, x);
-                const denVal = tryDirectSubstitution(den, x);
+            if (!expr.includes('/')) return undefined;
+
+            const [numerator, denominator] = expr.split('/').map(part => `(${part})`);
+            const scope = { x };
+
+            const numVal = math.evaluate(numerator, scope);
+            const denVal = math.evaluate(denominator, scope);
+
+            // Check for 0/0 or ∞/∞
+            const isIndeterminate = 
+                (Math.abs(numVal) < 1e-6 && Math.abs(denVal) < 1e-6) ||
+                (Math.abs(numVal) > 1e6 && Math.abs(denVal) > 1e6);
+
+            if (!isIndeterminate) return undefined;
+
+            steps.push(`<p>Found indeterminate form: ${numVal}/${denVal}</p>`);
+            steps.push(`<p>Applying L'Hôpital's Rule (taking derivatives of numerator and denominator)</p>`);
+
+            const numDeriv = math.derivative(numerator, 'x').toString();
+            const denDeriv = math.derivative(denominator, 'x').toString();
+
+            steps.push(`<p>Numerator derivative: ${numDeriv}<br>Denominator derivative: ${denDeriv}</p>`);
+
+            const numPrime = math.evaluate(numDeriv, scope);
+            const denPrime = math.evaluate(denDeriv, scope);
+
+            if (Math.abs(denPrime) > 1e-8) {
+                const result = numPrime / denPrime;
+                steps.push(`<p>After applying L'Hôpital's Rule: ${numPrime}/${denPrime} = ${result}</p>`);
+                return result;
+            }
+
+            // If still indeterminate, try second derivative
+            if (Math.abs(numPrime) < 1e-6 && Math.abs(denPrime) < 1e-6) {
+                steps.push(`<p>Still indeterminate, trying second derivative</p>`);
                 
-                if (Math.abs(numVal) < 1e-6 && Math.abs(denVal) < 1e-6) {
-                    // Numerical derivatives
-                    const h = 0.0001;
-                    const numPrime = (tryDirectSubstitution(num, x+h) - tryDirectSubstitution(num, x-h))/(2*h);
-                    const denPrime = (tryDirectSubstitution(den, x+h) - tryDirectSubstitution(den, x-h))/(2*h);
-                    
-                    if (Math.abs(denPrime) > 1e-6) {
-                        return numPrime / denPrime;
-                    }
+                const numSecondDeriv = math.derivative(numDeriv, 'x').toString();
+                const denSecondDeriv = math.derivative(denDeriv, 'x').toString();
+                
+                steps.push(`<p>Numerator second derivative: ${numSecondDeriv}<br>Denominator second derivative: ${denSecondDeriv}</p>`);
+                
+                const numSecondPrime = math.evaluate(numSecondDeriv, scope);
+                const denSecondPrime = math.evaluate(denSecondDeriv, scope);
+                
+                if (Math.abs(denSecondPrime) > 1e-8) {
+                    const result = numSecondPrime / denSecondPrime;
+                    steps.push(`<p>After second application of L'Hôpital's Rule: ${numSecondPrime}/${denSecondPrime} = ${result}</p>`);
+                    return result;
                 }
             }
+
             return undefined;
         } catch (e) {
+            steps.push(`<p>Error applying L'Hôpital's Rule: ${e.message}</p>`);
+            return undefined;
+        }
+    }
+
+    function tryNumericalApproach(expr, x, steps) {
+        try {
+            // Try values approaching from left and right
+            const h = 1e-6;
+            const leftApproach = x - h;
+            const rightApproach = x + h;
+            
+            const leftValue = tryDirectSubstitution(expr, leftApproach);
+            const rightValue = tryDirectSubstitution(expr, rightApproach);
+            
+            steps.push(`<p>Approaching from left (x = ${leftApproach}): ${leftValue}<br>
+                        Approaching from right (x = ${rightApproach}): ${rightValue}</p>`);
+            
+            if (leftValue !== undefined && rightValue !== undefined && 
+                Math.abs(leftValue - rightValue) < 1e-6) {
+                steps.push(`<p>Both sides approach the same value: ${leftValue}</p>`);
+                return leftValue;
+            }
+            
+            return undefined;
+        } catch (e) {
+            steps.push(`<p>Error in numerical approach: ${e.message}</p>`);
             return undefined;
         }
     }
