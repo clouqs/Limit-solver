@@ -151,28 +151,24 @@
             
             const resultField = MQ.StaticMath(document.getElementById('result'));
             
-            // Set default values
             functionInput.latex('x^2');
             approachInput.latex('2');
-            
-            // Calculate button click handler
+
             document.getElementById('calculate').addEventListener('click', function() {
-                try {
-                    const fn = functionInput.latex();
-                    const approach = approachInput.latex();
-                    
-                    // Simple limit calculation (direct substitution)
-                    // Note: math.js doesn't do symbolic limits, this is just substitution
-                    const expr = fn.replace(/\\?x/g, approach);
-                    const parsed = math.parse(expr);
-                    const value = parsed.evaluate();
-                    
-                    resultField.latex(`\\lim_{x \\to ${approach}} \\${fn} = ${value}`);
-                } catch (error) {
-                    resultField.latex('\\text{Error: Could not compute limit}');
-                    console.error(error);
-                }
-            });
+    try {
+        const fn = functionInput.latex();
+        const approach = approachInput.latex();
+        
+        const expr = fn.replace(/\\?x/g, approach);
+        const parsed = math.parse(expr);
+        const value = parsed.evaluate();
+
+        resultField.latex(`\\lim_{x \\to ${approach}} \\left( ${fn} \\right) = ${value}`);
+    } catch (error) {
+        resultField.latex('\\text{Error: Could not compute limit}');
+        console.error(error);
+    }
+});
         });
     </script>
 </body>
