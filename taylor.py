@@ -75,8 +75,8 @@ def main():
     a = 1.0    # Expansion point for binom and ln
 
     step = 0.1
-    x_bounds = {'low': -10, 'high': 10}  # was -2 to 2
-    y_bounds = {'low': -10, 'high': 50}  # adjust for better visibility
+    x_bounds = {'low': -200, 'high': 100}  # was -2 to 2
+    y_bounds = {'low': -200, 'high': 500}  # adjust for better visibility
 
 
     x = np.arange(x_bounds['low'], x_bounds['high'], step, dtype=np.float64)
@@ -108,8 +108,8 @@ def main():
         ax.plot(x, y_approx, color=colors[idx], label=f'Taylor {labels[idx]} (order {order})')
         ax.plot(x, y_actual, color=colors[idx], linestyle='dashed', label=f'Actual {labels[idx]}')
 
-    ax.set_xlim([x_bounds['low'], x_bounds['high']])
-    ax.set_ylim([y_bounds['low'], y_bounds['high']])
+    ax.set_xlim([-10,10])
+    ax.set_ylim([-5,10])
     ax.legend()
     ax.set_title('Taylor Approximations (Order 5)')
     ax.grid(True)
