@@ -68,6 +68,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function latexToMath(latex) {
         return latex
+            // Handle both \sqrt and \sqrt[n]{x} cases
+            .replace(/\\sqrt\[(\d+)\]{(.*?)}/g, '($2)^(1/$1)') // nth root
+            .replace(/\\sqrt{(.*?)}/g, 'sqrt($1)')
             .replace(/\\frac{(.*?)}{(.*?)}/g, '($1)/($2)')
             .replace(/\\sqrt{(.*?)}/g, 'sqrt($1)')
             .replace(/\\left|\\right/g, '')
