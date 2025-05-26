@@ -2,219 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Include MathQuill CSS and JS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathquill/build/mathquill.css">
-    <script src="https://cdn.jsdelivr.net/npm/mathquill/build/mathquill.js"></script>
-    <!-- Include jQuery for easier DOM manipulation -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Limit solver - maxy</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        #math-container {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 15px;
-            margin: 20px 0;
-            background-color: #f9f9f9;
-        }
-        
-        #math-field {
-            border: 1px solid #ddd;
-            padding: 15px;
-            min-height: 50px;
-            font-size: 18px;
-            background-color: white;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        
-        .button-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        
-        .math-button {
-            padding: 8px 12px;
-            background-color: #e0e0e0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .math-button:hover {
-            background-color: #d0d0d0;
-        }
-        
-        .math-button.operator {
-            background-color: #d9e8fb;
-        }
-        
-        .math-button.function {
-            background-color: #e8f5e9;
-        }
-        
-        .math-button.symbol {
-            background-color: #fff8e1;
-        }
-        
-        .options-container {
-            margin: 20px 0;
-        }
-        
-        .option-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        
-        select, input[type="text"] {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            width: 100%;
-            max-width: 300px;
-        }
-        
-        button[type="submit"] {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        button[type="submit"]:hover {
-            background-color: #45a049;
-        }
-        
-        .example-text {
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
-        }
-    </style>
+    <link rel="stylesheet" href="/path/to/mathquill.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="mathquill\mathquill.js"></script>
+    <script>
+var MQ = MathQuill.getInterface(2);
+</script>
+    <script src="script.js"></script>
+    <title>Document</title>
 </head>
 <body>
-    <h1>Limit solver - maxy</h1>
-    <p>To use this tool, please enter the function you want to analyze.</p>
+    <p>Solve <span id="problem">ax^2 + bx + c = 0</span>.</p>
 
-    <div id="math-container">
-        <span id="math-field"></span>
-        
-        <div class="button-row">
-            <button class="math-button" onclick="insertSymbol('x')">x</button>
-            <button class="math-button" onclick="insertSymbol('y')">y</button>
-            <button class="math-button" onclick="insertSymbol('n')">n</button>
-            <button class="math-button operator" onclick="insertSymbol('+')">+</button>
-            <button class="math-button operator" onclick="insertSymbol('-')">-</button>
-            <button class="math-button operator" onclick="insertSymbol('\\cdot')">×</button>
-            <button class="math-button operator" onclick="insertSymbol('\\div')">÷</button>
-            <button class="math-button operator" onclick="insertSymbol('^')">^</button>
-            <button class="math-button operator" onclick="insertSymbol('\\frac{\\placeholder{}}{\\placeholder{}}')">a/b</button>
-        </div>
-        
-        <div class="button-row">
-            <button class="math-button function" onclick="insertSymbol('\\sqrt{\\placeholder{}}')">√x</button>
-            <button class="math-button function" onclick="insertSymbol('\\sin(\\placeholder{})')">sin</button>
-            <button class="math-button function" onclick="insertSymbol('\\cos(\\placeholder{})')">cos</button>
-            <button class="math-button function" onclick="insertSymbol('\\tan(\\placeholder{})')">tan</button>
-            <button class="math-button function" onclick="insertSymbol('\\ln(\\placeholder{})')">ln</button>
-            <button class="math-button function" onclick="insertSymbol('\\log_{10}(\\placeholder{})')">log</button>
-            <button class="math-button function" onclick="insertSymbol('e^{\\placeholder{}}')">e^x</button>
-            <button class="math-button symbol" onclick="insertSymbol('\\pi')">π</button>
-            <button class="math-button symbol" onclick="insertSymbol('\\infty')">∞</button>
-        </div>
-        
-        <div class="options-container">
-            <div class="option-group">
-                <label for="limit-type">Limit Type:</label>
-                <select id="limit-type" name="limit-type">
-                    <option value="two-sided">Two-sided limit</option>
-                    <option value="from-right">Limit from right (x→a⁺)</option>
-                    <option value="from-left">Limit from left (x→a⁻)</option>
-                </select>
-            </div>
-            
-            <div class="option-group">
-                <label for="variable">Variable approaching:</label>
-                <input type="text" id="variable" name="variable" value="x" placeholder="e.g. x">
-            </div>
-            
-            <div class="option-group">
-                <label for="approach-value">Approaches to:</label>
-                <input type="text" id="approach-value" name="approach-value" value="0" placeholder="e.g. 0, ∞, etc.">
-                <p class="example-text">Examples: 0, 1, ∞, -∞, pi/2</p>
-            </div>
-        </div>
-    </div>
-
-    <form action="/solve" method="post" onsubmit="return prepareSubmission();">
-        <!-- Hidden inputs to submit the data -->
-        <input type="hidden" name="function" id="function">
-        <input type="hidden" name="limit_type" id="limit_type">
-        <input type="hidden" name="variable" id="hidden_variable">
-        <input type="hidden" name="approach_value" id="hidden_approach_value">
-        
-        <button type="submit">Solve Limit</button>
-    </form>
-
-    <script>
-        const MQ = MathQuill.getInterface(2);
-        const mathFieldSpan = document.getElementById('math-field');
-        const mathField = MQ.MathField(mathFieldSpan, {
-            spaceBehavesLikeTab: true,
-            handlers: {
-                edit: function () {
-                    const latex = mathField.latex();
-                    console.log("Edited LaTeX:", latex);
-                }
-            }
-        });
-
-        // Function to insert symbols into the math field
-        function insertSymbol(symbol) {
-            // Replace placeholder with a special command that MathQuill will interpret
-            const processedSymbol = symbol.replace(/\\placeholder\{\}/g, '\\placeholder{}');
-            mathField.cmd(processedSymbol);
-            mathField.focus();
-        }
-
-        // Function to prepare the form submission
-        function prepareSubmission() {
-            // Get the LaTeX expression
-            const latex = mathField.latex();
-            document.getElementById('function').value = latex;
-            
-            // Get other form values
-            document.getElementById('limit_type').value = document.getElementById('limit-type').value;
-            document.getElementById('hidden_variable').value = document.getElementById('variable').value;
-            document.getElementById('hidden_approach_value').value = document.getElementById('approach-value').value;
-            
-            return true; // allow form to submit
-        }
-
-        // Initialize with an example
-        $(document).ready(function() {
-            mathField.latex('\\frac{\\sin(x)}{x}');
-        });
-    </script>
+<script>
+  var problemSpan = document.getElementById('problem');
+  MQ.StaticMath(problemSpan);
+</script>
+    
 </body>
 </html>
