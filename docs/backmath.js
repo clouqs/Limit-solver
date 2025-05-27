@@ -22,49 +22,55 @@ document.addEventListener('DOMContentLoaded', function() {
     approachInput.latex('2');
 
     document.getElementById('calculate').addEventListener('click', function() {
-        try {
-            const latexFn = functionInput.latex();
-            const latexApproach = approachInput.latex();
-            
-            // Convert LaTeX to math expression
-            const mathExpr = latexToMath(latexFn);
-            const approachValue = parseLatexNumber(latexApproach);
-            
-            // Calculate limit
-            const { value, steps } = calculateLimit(mathExpr, approachValue);
-            
-            // Display results
-            if (value !== undefined) {
-                resultField.latex(`\\lim_{x \\to ${approachValue}} ${latexFn} = ${formatResult(value)}`);
-                stepsField.innerHTML = steps;
-            } else {
-                resultField.latex(`\\lim_{x \\to ${approachValue}} ${latexFn} \\text{ does not exist}`);
-                stepsField.innerHTML = `<p>Limit does not exist or could not be determined</p>`;
-            }
-        } catch (error) {
-            resultField.latex('\\text{Error in calculation}');
-            stepsField.innerHTML = `<p>Error: ${error.message}</p>`;
-            console.error(error);
+    try {
+        const latexFn = functionInput.latex();
+        const latexApproach = approachInput.latex();
+        
+        const mathExpr = latexToMath(latexFn);
+        const approachValue = parseLatexNumber(latexApproach);
+        
+        const { value, steps } = calculateLimit(mathExpr, approachValue);
+        
+        // Display results
+        if (value !== undefined) {
+            const approachDisplay = approachValue === Infinity ? '\\infty' : 
+                                  approachValue === -Infinity ? '-\\infty' : approachValue;
+            resultField.latex(`\\lim_{x \\to ${approachDisplay}} ${latexFn} = ${formatResult(value)}`);
+            stepsField.innerHTML = steps;
+        } else {
+            const approachDisplay = approachValue === Infinity ? '\\infty' : 
+                                  approachValue === -Infinity ? '-\\infty' : approachValue;
+            resultField.latex(`\\lim_{x \\to ${approachDisplay}} ${latexFn} \\text{ does not exist}`);
+            stepsField.innerHTML = `<p>Limit does not exist or could not be determined</p>`;
         }
-    });
+    } catch (error) {
+        resultField.latex('\\text{Error in calculation}');
+        stepsField.innerHTML = `<p>Error: ${error.message}</p>`;
+        console.error(error);
+    }
+});
 
     function parseLatexNumber(latex) {
-        // Handle simple numbers and fractions
-        if (/^-?\d+$/.test(latex)) return parseFloat(latex);
-        
-        // Handle fractions like \frac{num}{denom}
-        const fracMatch = latex.match(/^\\frac\{(-?\d+)\}\{(-?\d+)\}$/);
-        if (fracMatch) {
-            return parseFloat(fracMatch[1]) / parseFloat(fracMatch[2]);
-        }
-        
-        // Handle pi expressions like \pi or -\pi
-        if (latex === '\\pi') return Math.PI;
-        if (latex === '-\\pi') return -Math.PI;
-        
-        // Default case
-        return parseFloat(latex) || 0;
+    // Handle infinity cases
+    if (latex === '\\infty') return Infinity;
+    if (latex === '-\\infty') return -Infinity;
+    
+    // Handle simple numbers and fractions
+    if (/^-?\d+$/.test(latex)) return parseFloat(latex);
+    
+    // Handle fractions like \frac{num}{denom}
+    const fracMatch = latex.match(/^\\frac\{(-?\d+)\}\{(-?\d+)\}$/);
+    if (fracMatch) {
+        return parseFloat(fracMatch[1]) / parseFloat(fracMatch[2]);
     }
+    
+    // Handle pi expressions like \pi or -\pi
+    if (latex === '\\pi') return Math.PI;
+    if (latex === '-\\pi') return -Math.PI;
+    
+    // Default case
+    return parseFloat(latex) || 0;
+}
 
     function latexToMath(latex) {
         return latex
@@ -96,6 +102,18 @@ document.addEventListener('DOMContentLoaded', function() {
             steps.push(`<p>Direct substitution works: Result = ${direct}</p>`);
             return { value: direct, steps: steps.join('') };
         }
+
+        if (x === Infinity || x === -Infinity) {
+        steps.push(`<p><b>Step 1: Infinity Limit</b><br>Calculating limit as x approaches ${x === Infinity ? '∞' : '-∞'}</p>`);
+        
+        // Try to evaluate the limit at infinity
+        const infinityValue = evaluateAtInfinity(expr, x, steps);
+        if (infinityValue !== undefined) {
+            return { value: infinityValue, steps: steps.join('') };
+        }
+        
+        return { value: undefined, steps: steps.join('') };
+    }
         
         // Step 2: Try algebraic simplification
         const simplified = tryAlgebraicSimplification(expr, x);
@@ -248,8 +266,93 @@ document.addEventListener('DOMContentLoaded', function() {
             return undefined;
         }
     }
+    function evaluateAtInfinity(expr, infinity, steps) {
+    try {
+        // Strategy: Substitute x with 1/y and take limit as y→0+
+        const transformedExpr = expr.replace(/x/g, '(1/y)');
+        steps.push(`<p>Substituting x = 1/y to transform to limit as y→0+</p>`);
+        
+        // Try direct substitution with a very small y
+        const y = 1e-10;
+        const value = tryDirectSubstitution(transformedExpr, y);
+        
+        if (value !== undefined) {
+            steps.push(`<p>Evaluating at y = ${y}: ${value}</p>`);
+            return infinity === Infinity ? value : 
+                   (value === 0 ? 0 : -value); // Handle -∞ case if needed
+        }
+        
+        // Try algebraic simplification for common cases
+        // Polynomial terms: highest degree dominates
+        if (expr.includes('x^')) {
+            const highestPower = getHighestPower(expr);
+            if (highestPower > 0) {
+                steps.push(`<p>Dominant term is x^${highestPower} → ${infinity === Infinity ? '∞' : '-∞'}</p>`);
+                return infinity; // For positive powers
+            }
+        }
+        
+        // Rational functions: compare degrees
+        if (expr.includes('/')) {
+            const [numerator, denominator] = expr.split('/');
+            const numDegree = getHighestPower(numerator);
+            const denomDegree = getHighestPower(denominator);
+            
+            if (numDegree > denomDegree) {
+                steps.push(`<p>Numerator degree (${numDegree}) > Denominator degree (${denomDegree}) → ${infinity === Infinity ? '∞' : '-∞'}</p>`);
+                return infinity;
+            } else if (numDegree < denomDegree) {
+                steps.push(`<p>Numerator degree (${numDegree}) < Denominator degree (${denomDegree}) → 0</p>`);
+                return 0;
+            } else {
+                // Degrees equal - ratio of leading coefficients
+                const numLead = getLeadingCoefficient(numerator);
+                const denomLead = getLeadingCoefficient(denominator);
+                const ratio = numLead / denomLead;
+                steps.push(`<p>Equal degrees, ratio of leading coefficients: ${numLead}/${denomLead} = ${ratio}</p>`);
+                return ratio;
+            }
+        }
+        
+        return undefined;
+    } catch (e) {
+        steps.push(`<p>Error evaluating at infinity: ${e.message}</p>`);
+        return undefined;
+    }
+}
+
+// Helper function to get highest power in an expression
+function getHighestPower(expr) {
+    const powerMatches = expr.match(/x\^(\d+)/g);
+    if (!powerMatches) {
+        // Check for linear terms (x without exponent)
+        return expr.includes('x') ? 1 : 0;
+    }
+    
+    let maxPower = 0;
+    powerMatches.forEach(match => {
+        const power = parseInt(match.split('^')[1]);
+        if (power > maxPower) maxPower = power;
+    });
+    
+    return maxPower;
+}
+
+// Helper function to get leading coefficient
+function getLeadingCoefficient(expr) {
+    // This is simplified - would need more robust parsing for real cases
+    const termMatch = expr.match(/(-?\d*)x\^?\d*/);
+    if (termMatch) {
+        return termMatch[1] === '' ? 1 : 
+               termMatch[1] === '-' ? -1 : parseFloat(termMatch[1]);
+    }
+    return 1; // Default coefficient
+}
 
     function formatResult(value) {
+
+        if (value === Infinity) return '\\infty';
+        if (value === -Infinity) return '-\\infty';
         // Format simple fractions
         const tolerance = 1e-6;
         for (let d = 1; d <= 10; d++) {
