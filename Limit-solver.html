@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./mathquill/mathquill.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="./mathquill/mathquill.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/algebra.js/0.2.6/algebra.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.css" />
+    <script>
+        var MQ = MathQuill.getInterface(2);
+    </script>
+    <title>Advanced Limit Solver</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .input-box {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .math-field-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            min-height: 50px;
+            background-color: #fafafa;
+        }
+        
+        .mq-editable-field {
+            font-size: 1.5em;
+            min-width: 200px;
+            padding: 5px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .result-box {
+            background-color: #e8f4fc;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 60px;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .mq-math-mode {
+            font-size: 1.4em;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.3);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+        .top-right-logo {
+            position: absolute;
+            top: 125px;
+            right: 100px;
+            width: 300px; /* Adjust as needed */
+            height: auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced Limit Solver</h1>
+    <img src="./taylor.png" alt="Logo" class="top-right-logo">
+    
+    <div class="container">
+        <div class="input-box">
+            <div class="input-group">
+                <label for="function-input">Function f(x):</label>
+                <div class="math-field-container">
+                    <span id="function-input"></span>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="approach-input">Approaches:</label>
+                <div class="math-field-container">
+                    <span id="approach-input"></span>
+                </div>
+            </div>
+            
+            <button id="calculate">Calculate Limit</button>
+        </div>
+        
+        <div class="result-box">
+            <div class="result-title">Result:</div>
+            <div id="result"></div>
+            <div id="steps" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script src="./backmath.js" defer></script>
+</body>
+</html>
