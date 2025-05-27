@@ -267,59 +267,77 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     function evaluateAtInfinity(expr, infinity, steps) {
-    try {
-        // Strategy: Substitute x with 1/y and take limit as y→0+
-        const transformedExpr = expr.replace(/x/g, '(1/y)');
-        steps.push(`<p>Substituting x = 1/y to transform to limit as y→0+</p>`);
-        
-        // Try direct substitution with a very small y
-        const y = 1e-10;
-        const value = tryDirectSubstitution(transformedExpr, y);
-        
-        if (value !== undefined) {
-            steps.push(`<p>Evaluating at y = ${y}: ${value}</p>`);
-            return infinity === Infinity ? value : 
-                   (value === 0 ? 0 : -value); // Handle -∞ case if needed
-        }
-        
-        // Try algebraic simplification for common cases
-        // Polynomial terms: highest degree dominates
-        if (expr.includes('x^')) {
-            const highestPower = getHighestPower(expr);
-            if (highestPower > 0) {
-                steps.push(`<p>Dominant term is x^${highestPower} → ${infinity === Infinity ? '∞' : '-∞'}</p>`);
-                return infinity; // For positive powers
-            }
-        }
-        
-        // Rational functions: compare degrees
-        if (expr.includes('/')) {
-            const [numerator, denominator] = expr.split('/');
-            const numDegree = getHighestPower(numerator);
-            const denomDegree = getHighestPower(denominator);
+        try {
+            // Strategy: Substitute x with 1/y and take limit as y→0+
+            const transformedExpr = expr.replace(/x/g, '(1/y)');
+            steps.push(`<p>Substituting x = 1/y to transform to limit as y→0+</p>`);
             
-            if (numDegree > denomDegree) {
-                steps.push(`<p>Numerator degree (${numDegree}) > Denominator degree (${denomDegree}) → ${infinity === Infinity ? '∞' : '-∞'}</p>`);
-                return infinity;
-            } else if (numDegree < denomDegree) {
-                steps.push(`<p>Numerator degree (${numDegree}) < Denominator degree (${denomDegree}) → 0</p>`);
-                return 0;
-            } else {
-                // Degrees equal - ratio of leading coefficients
-                const numLead = getLeadingCoefficient(numerator);
-                const denomLead = getLeadingCoefficient(denominator);
-                const ratio = numLead / denomLead;
-                steps.push(`<p>Equal degrees, ratio of leading coefficients: ${numLead}/${denomLead} = ${ratio}</p>`);
-                return ratio;
+            // Try direct substitution with a very small y
+            const y = 1e-10;
+            const value = tryDirectSubstitution(transformedExpr, y);
+            
+            if (value !== undefined) {
+                steps.push(`<p>Evaluating at y = ${y}: ${value}</p>`);
+                return infinity === Infinity ? value : 
+                    (value === 0 ? 0 : -value); // Handle -∞ case if needed
             }
+            
+            // Try algebraic simplification for common cases
+            // Polynomial terms: highest degree dominates
+            if (expr.includes('x^')) {
+                const highestPower = getHighestPower(expr);
+                if (highestPower > 0) {
+                    steps.push(`<p>Dominant term is x^${highestPower} → ${infinity === Infinity ? '∞' : '-∞'}</p>`);
+                    return infinity; // For positive powers
+                }
+            }
+            
+            // Rational functions: compare degrees
+            if (expr.includes('/')) {
+                const [numerator, denominator] = expr.split('/');
+                const numDegree = getHighestPower(numerator);
+                const denomDegree = getHighestPower(denominator);
+
+                if (numDegree > denomDegree) {
+                    steps.push(`<p>Numerator has higher degree → limit is ${infinity === Infinity ? '\\infty' : '-\\infty'}</p>`);
+                    return infinity;
+                } else if (numDegree < denomDegree) {
+                    steps.push(`<p>Denominator has higher degree → limit is 0</p>`);
+                    return 0;
+                } else {
+                    steps.push(`<p>Degrees are equal → limit is ratio of leading coefficients</p>`);
+                    const numLeadCoeff = getLeadingCoefficient(numerator, numDegree);
+                    const denomLeadCoeff = getLeadingCoefficient(denominator, denomDegree);
+                    const ratio = numLeadCoeff / denomLeadCoeff;
+                    steps.push(`<p>Leading coefficient ratio: ${numLeadCoeff}/${denomLeadCoeff} = ${ratio}</p>`);
+                    return ratio;
+                }
+            }
+
+            return undefined;
+        } catch (e) {
+            steps.push(`<p>Error evaluating limit at infinity: ${e.message}</p>`);
+            return undefined;
         }
-        
-        return undefined;
-    } catch (e) {
-        steps.push(`<p>Error evaluating at infinity: ${e.message}</p>`);
-        return undefined;
     }
-}
+
+    function getHighestPower(expr) {
+        const matches = expr.match(/x\^(\d+)/g);
+        if (!matches) return 0;
+        return Math.max(...matches.map(m => parseInt(m.replace('x^', ''))));
+    }
+
+    function getLeadingCoefficient(expr, degree) {
+        const regex = new RegExp(`([+-]?\\d*\\.?\\d*)\\*?x\\^${degree}`);
+        const match = expr.match(regex);
+        if (match) {
+            const coeff = match[1];
+            return coeff === '' || coeff === '+' ? 1 :
+                coeff === '-' ? -1 : parseFloat(coeff);
+        }
+        return 1;
+    }
+
 
 // Helper function to get highest power in an expression
 function getHighestPower(expr) {
