@@ -156,6 +156,22 @@ document.addEventListener('DOMContentLoaded', function() {
             return undefined;
         }
     }
+    function tryTaylorSeries(expr, x, steps) {
+    if (Math.abs(x) < 1e-6 && expr.includes('sin')) {
+        steps.push("<p>Using Taylor series approximation: sin(x) ≈ x - x³/6</p>");
+        const taylorApprox = expr.replace('sin(x)', '(x - (x^3)/6)');
+        return tryDirectSubstitution(taylorApprox, x);
+    }
+
+        if(Math.abs(x) < 1e-6 && expr.includes('cos')) {
+            steps.push("<p>Using Taylor series approximation: cos(x) ≈ 1 - x²/2 +x⁴/24 o(x⁴)</p>");
+            const taylorApprox = expr.replace('cos(x)', '(1 - (x^2)/2 + (x^4)/24)');
+            return tryDirectSubstitution(taylorApprox, x);
+    }
+    return undefined;
+}
+
+
 
     function tryAlgebraicSimplification(expr, x) {
         try {
