@@ -158,15 +158,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function tryTaylorSeries(expr, x, steps) {
     if (Math.abs(x) < 1e-6 && expr.includes('sin')) {
-        steps.push("<p>Using Taylor series approximation: sin(x) ≈ x - x³/6</p>");
+        steps.push("<p>Using Taylor series approximation: sin(x) ≈ x - x^3/6 + o(x^3)</p>");
         const taylorApprox = expr.replace('sin(x)', '(x - (x^3)/6)');
         return tryDirectSubstitution(taylorApprox, x);
     }
 
         if(Math.abs(x) < 1e-6 && expr.includes('cos')) {
-            steps.push("<p>Using Taylor series approximation: cos(x) ≈ 1 - x²/2 +x⁴/24 o(x⁴)</p>");
-            const taylorApprox = expr.replace('cos(x)', '(1 - (x^2)/2 + (x^4)/24)');
+            steps.push("<p>Using Taylor series approximation: cos(x) ≈ 1 - x^2/2 +x^4/24 + o(x^4)</p>");
+            const taylorApprox = expr.replace('cos(x)', '(1 - (x^2)/2 + (x^4)/24 + o(x^4))');
             return tryDirectSubstitution(taylorApprox, x);
+    }
+
+    if(Math.abs(x) < 1e-6 && expr.includes('exp')) {
+        steps.push("<p>Using Taylor series approximation: exp(x) ≈ 1 + x + x^2/2 + o(x^2)</p>");
+        const taylorApprox = expr.replace('exp(x)', '(1 + x + (x^2)/2 + (x^3)/6 + (x^4)/24 + o(x^4))');
+        return tryDirectSubstitution(taylorApprox, x);
+    }
+
+    if (Math.abs(x) < 1e-6 && expr.includes('ln')) {
+        steps.push("<p>Using Taylor series approximation: ln(1+x) ≈ x - (x^2)/2 + o(x^2)</p>");
+        const taylorApprox = expr.replace('ln(x)', '(x - (x^2)/2 + (x^3)/3 - (x^4)/4 ');
+        return tryDirectSubstitution(taylorApprox, x);
     }
     return undefined;
 }
